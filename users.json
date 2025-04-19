@@ -1,0 +1,8 @@
+{
+    "uuid": {
+        "uname": "USERNAME",
+        "passwd": "PASSWORD HASH",
+        "salt": "PASSWORD SALT",
+        "homedir": "/home/USERNAME"
+    }
+}

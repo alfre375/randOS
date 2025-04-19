@@ -1,0 +1,4 @@
+PERMISSIONS directoryInformation
+
+VAR dir = getuserdir()
+OUT dir
