@@ -1,6 +1,21 @@
 # Imports
 import json
 import os
+if not os.path.exists('./randosUtils.py'):
+    import requests # type: ignore
+    try:
+        print("The randosUtils.py file is missing, downloading randosUtils.py from GitHub...")
+        response = requests.get('https://raw.githubusercontent.com/alfre375/randOS/main/randosUtils.py', stream=True)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx and 5xx)
+
+        with open('./randosUtils.py', 'wb') as file:
+            for chunk in response.iter_content(chunk_size=8192):  # Download in chunks
+                if chunk:  # Filter out keep-alive new chunks
+                    file.write(chunk)
+        print(f"File successfully downloaded and saved to randosUtils.py.")
+    except Exception as e:
+        print(f"Failed to download the file: {e}")
+        raise
 import uuid
 import random
 import hashlib
