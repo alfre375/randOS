@@ -49,7 +49,7 @@ if (len(users) == 0):
                 os.mkdir('./files' + newHomeDir)
         else:
             os.mkdir('./files' + newHomeDir)
-        newUUID = uuid.uuid4()
+        newUUID = str(uuid.uuid4())
         newSalt = str(random.random())
         newPassword = newPassword + newSalt
         newPassword = hashlib.sha256(newPassword.encode('UTF-8')).hexdigest()
@@ -82,28 +82,71 @@ if (len(users) == 0):
             os.mkdir('./files/bin')
         else:
             print('Program directory found. Continuing.')
+        print('Checking for cfg directory')
+        if (not os.path.exists('./files/cfg')):
+            print('Config directory not found. Creating new one.')
+            os.mkdir('./files/cfg')
+        else:
+            print('Config directory found. Continuing.')
+        print('Checking for canRunAsIs config file')
+        if (not os.path.exists('./files/cfg/canRunAsIs')):
+            print('canRunAsIs config file not found. Creating new one.')
+            with open('./files/cfg/canRunAsIs', 'w') as craiFile:
+                craiFile.write('builtinpubkey.pem')
+                craiFile.close()
+        else:
+            print('canRunAsIs config file found. continuing')
+        # Add defualt program files
+        builtinPrograms = ['pwd']
+        for prog in builtinPrograms:
+            if os.path.exists('./files/bin/' + prog):
+                print(prog + ' program file found. Skipping.')
+            else:
+                print(f'Downloading {prog}')
+                randosUtils.downloadFile(f'https://raw.githubusercontent.com/alfre375/randOS/main/{prog}', f'./files/bin/{prog}')
+                utk, filesOfCorrespondingKeys, khv, res = randosUtils.validateProgram(f'/bin/{prog}')
+                print(utk, filesOfCorrespondingKeys, khv, res)
+                if ('builtinpubkey.pem' in filesOfCorrespondingKeys) and utk and khv and res:
+                    print('Validation successful')
+                else:
+                    print('WARN: Validation failed. File may be tampered with. Deleting.')
+                    os.remove(f'./files/bin/{prog}')
         print('You\'re all set! Now just log in with your new credentials!')
         break
+
+# Now the CLI simulation starts
 try:
-    # Getting the username from the user
-    uname: str = input('Please enter a username: ')
-    passwd = getpass.getpass('Enter your password: ')
-    userUUID = randosUtils.findUsernameByUUID(uname, users)
-    if (userUUID == None):
-        print('Unable to locate user')
-    salt: str = users[userUUID]['salt']
-    passwd = passwd + salt
-    passwd = hashlib.sha256(passwd.encode('UTF-8')).hexdigest()
-    if (passwd == users[userUUID]['passwd']):
-        print('Welcome, ' + uname)
-        cwd = users[userUUID]['homedir']
-        if (not os.path.exists('./files/bin')):
-            os.mkdir('./files/bin')
-            # Add defualt system files
-            # 
-        while True:
-            cmd = input(uname + '@' + socket.gethostname() + ' [' + cwd + '] $ ')
-            cmds = cmd.split(' ')
+    while True:
+        # Getting the username from the user
+        uname: str = input('Please enter a username: ')
+        passwd = getpass.getpass('Enter your password: ')
+        userUUID = randosUtils.findUsernameByUUID(uname, users)
+        if (userUUID == None):
+            print('The username and passwords do not match')
+            continue
+        salt: str = users[userUUID]['salt']
+        passwd = passwd + salt
+        passwd = hashlib.sha256(passwd.encode('UTF-8')).hexdigest()
+        if (passwd == users[userUUID]['passwd']):
+            break
+        print('The username and passwords do not match')
+        continue
+    print('Welcome, ' + uname)
+    cwd = users[userUUID]['homedir']
+    while True:
+        cmd = input(uname + '@' + socket.gethostname() + ' [' + cwd + '] $ ')
+        cmds = cmd.split(' ')
+        if (cmd == ''):
+            continue
+        if cmds[0] == 'sudo':
+            if userUUID in sudoers:
+                cmds.remove('sudo')
+                randosUtils.executeCommand(cmds, True)
+                continue
+            else:
+                print('User is not in the sudoers file.')
+                continue
+        randosUtils.executeCommand(cmds, False)
 except KeyboardInterrupt:
     print('Saving files...')
     randosUtils.saveSystemFiles(users, sudoers)

@@ -32,8 +32,11 @@ def validateProgram(filename: str, keysfoldername: str = '/progpubkeys'):
     keyHashValid: bool = False
     if os.path.exists('./files' + keysfoldername) and os.path.isdir('./files' + keysfoldername):
         for file in os.listdir('./files' + keysfoldername):
-            if os.path.isfile(file):
+            #print(os.listdir('./files' + keysfoldername))
+            #print(file)
+            if os.path.isfile('./files'+keysfoldername+'/'+file):
                 fc = b''
+                #print(file)
                 with open('./files'+keysfoldername+'/'+file,'rb') as keyfile:
                     fc = keyfile.read()
                 if (fc == publickey):
@@ -71,15 +74,38 @@ def findUsernameByUUID(username: str, users):
     return None
 
 def saveSystemFiles(users, sudoers):
+    # Convert UUIDs to strings
+    serialisable_sudoers = []
+    for sudoer in sudoers:
+        serialisable_sudoers.append(str(sudoer))
     with open('./files/sudoers.json', 'w') as sudoersfile:
-        sudoersfile.write(json.dumps(sudoers))
+        sudoersfile.write(json.dumps(serialisable_sudoers))
     # Convert UUID keys to strings
-    serializable_users = {str(key): value for key, value in users.items()}
+    serialisable_users = {str(key): value for key, value in users.items()}
     with open('./files/users.json', 'w') as usersfile:
-        usersfile.write(json.dumps(serializable_users))
+        usersfile.write(json.dumps(serialisable_users))
 
-def executeCommand(cmds: str, sudoPowers: bool):
-    print('We are not yet ready to implement this')
+def executeCommand(cmds: list, sudoPowers: bool):
+    cmd = cmds[0]
+    code = ''
+    fc: dict = {}
+    utk, filesOfCorrespondingKeys, khv, validation = validateProgram('./files/bin/' + cmd)
+    if not (utk and khv and validation):
+        print('Validation failed. Program may be tampered with or from an unauthorised source.')
+        return False
+    with open('./files/bin/' + cmd) as file:
+        if isinstance(file, str):
+            fc = json.load(file)
+        else:
+            fc = json.load(file.read())
+    if ('sudo.runAsIs' in fc['permissions']):
+        code = base64.b64decode(fc['code']).decode()
+        if sudoPowers:
+            exec(code)
+            return True
+        else:
+            print('This action requires elevated privileges.')
+            return False
 
 def downloadFile(uri: str, filename: str):
     """
