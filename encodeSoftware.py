@@ -86,6 +86,72 @@ if option == 'encode':
     with open(sys.argv[4], 'w') as outputfile:
         json.dump(out, outputfile, indent=4)
     print("Encoded and signed output saved.")
+elif option == 'encode-as-is':
+    print('Encoding file')
+    privatekey = None
+    pycode: str = ''
+    if len(sys.argv) < 6:
+        print('Run: python3.13 encodeSoftware.py encode-as-is [PRIVATEKEY] [INPUT] [OUTPUT] [PUBLIC KEY]')
+        exit()
+    with open(sys.argv[2], 'rb') as privatekeyfile:
+        privatekey = privatekeyfile.read()
+    with open(sys.argv[3], 'r') as inputfile:
+        if isinstance(inputfile, str):
+            pycode = inputfile
+        else:
+            pycode = inputfile.read()
+    perms = ['sudo.runAsIs']
+    print('Pycode:\n' + pycode)
+    pycode = base64.b64encode(pycode.encode())
+    pycodehash = hashlib.sha256(pycode).hexdigest()
+    # Load the private key (handle encrypted or non-encrypted keys)
+    try:
+        private_key = serialization.load_pem_private_key(privatekey, password=None)
+    except TypeError:
+        password = getpass.getpass("Enter the password for the private key: ").encode()
+        private_key = serialization.load_pem_private_key(privatekey, password=password)
+
+    # Sign the hash with the private key
+    signature = private_key.sign(
+        pycodehash.encode(),
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH,
+        ),
+        hashes.SHA256(),
+    )
+
+    # Validate the signature
+    with open(sys.argv[5], 'rb') as publickeyfile:
+        publickey = publickeyfile.read()
+    public_key = serialization.load_pem_public_key(publickey)
+
+    try:
+        public_key.verify(
+            signature,
+            pycodehash.encode(),
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH,
+            ),
+            hashes.SHA256(),
+        )
+        print("Signature validation successful.")
+    except Exception as e:
+        print(f"Signature validation failed: {e}")
+
+    # Save the signature and hashed code to the output file
+    out = {
+        'publickey': base64.b64encode(publickey).decode(),
+        'pubkeyhash': hashlib.sha256(publickey).hexdigest(),
+        'permissions': perms,
+        'code': pycode.decode(),
+        'signature': base64.b64encode(signature).decode(),
+    }
+    print(json.dumps(out, indent=4))
+    with open(sys.argv[4], 'w') as outputfile:
+        json.dump(out, outputfile, indent=4)
+    print("Encoded and signed output saved.")
 elif option == 'genkeypair':
     print('Generating a new keypair')
     privateKeyFilename = None

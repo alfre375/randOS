@@ -7,6 +7,9 @@ from cryptography.hazmat.primitives import hashes # type: ignore
 from cryptography.hazmat.primitives.asymmetric import padding #type: ignore
 from cryptography.hazmat.primitives import serialization #type: ignore
 
+class ExecFinishedEarly(Exception):
+    pass
+
 def validateProgram(filename: str, keysfoldername: str = '/progpubkeys'):
     # Load the JSON from the file
     data: dict = {}
@@ -85,6 +88,15 @@ def saveSystemFiles(users, sudoers):
     with open('./files/users.json', 'w') as usersfile:
         usersfile.write(json.dumps(serialisable_users))
 
+def listsHaveCommonItem(a: list, b: list):
+    """
+    Tells you if two lists have a common item. If so, returns True; if not, returns False.
+    """
+    for item in a:
+        if item in b:
+            return True
+    return False
+
 def executeCommand(cmds: list, sudoPowers: bool):
     cmd = cmds[0]
     code = ''
@@ -100,8 +112,23 @@ def executeCommand(cmds: list, sudoPowers: bool):
             fc = json.load(file.read())
     if ('sudo.runAsIs' in fc['permissions']):
         code = base64.b64decode(fc['code']).decode()
-        if sudoPowers:
-            exec(code)
+        canRunAsIs: list = []
+        with open('./files/cfg/canRunAsIs', 'r') as canRunAsIsFile:
+            if isinstance(canRunAsIsFile, str):
+                canRunAsIs = json.load(canRunAsIsFile)
+            else:
+                canRunAsIs = json.load(canRunAsIsFile.read())
+        if sudoPowers and listsHaveCommonItem(filesOfCorrespondingKeys, canRunAsIs):
+            try:
+                exec(code)
+            except ExecFinishedEarly:
+                return True
+            except KeyboardInterrupt:
+                print('Interrupted with ^C')
+                return False
+            except Exception as e:
+                print(f'Exception: {e}')
+                return False
             return True
         else:
             print('This action requires elevated privileges.')
