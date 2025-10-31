@@ -1,4 +1,3 @@
 PERMISSIONS directoryInformation
 
-VAR dir = getuserdir()
-OUT dir
+out(getActiveDirectory());

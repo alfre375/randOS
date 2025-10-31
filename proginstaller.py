@@ -71,29 +71,6 @@ if cmds[0] == 'install' or cmds[0] == 'i': # type: ignore
             downloadFile(progDownloadURI, './files/bin/' + progname)
             print('Download finished. Removing backup.')
             os.remove('./files/bin/' + progname + '.backup')
-            if '-t' in cmds: # type: ignore
-                pubkey = b''
-                keyexists = False
-                with open('./files/bin/' + progname, 'rb') as progfile:
-                    progjson: dict = {}
-                    if isinstance(progfile, str):
-                        progjson = json.load(progfile)
-                    else:
-                        progjson = json.load(progfile.read())
-                    pubkey = base64.b64decode(progjson['publickey'])
-                    progfile.close()
-                for key in os.listdir('./files/progpubkeys'):
-                    with open('./files/progpubkeys/' + key, 'rb') as keyfile:
-                        if keyfile.read() == pubkey:
-                            keyexists = True
-                            break
-                if not keyexists:
-                    keyfilename = input('Enter a name for the file for the public key (without the extension): ') + '.pem'
-                    with open(keyfilename, 'wb') as keyfile:
-                        keyfile.write(pubkey)
-                        keyfile.close()
-                else:
-                    print('This public key is already trusted')
         except Exception:
             if os.path.exists('./files/bin/' + progname + '.backup'):
                 print('Download failed. Restoring old version.')
@@ -101,3 +78,82 @@ if cmds[0] == 'install' or cmds[0] == 'i': # type: ignore
                 print('Restoration finished.')
             else:
                 print('Download failed')
+                raise randosUtils.ExecFinishedEarly
+        if '-t' in cmds: # type: ignore
+            pubkey = b''
+            keyexists = False
+            with open('./files/bin/' + progname, 'rb') as progfile:
+                progjson: dict = {}
+                if isinstance(progfile, str):
+                    progjson = json.load(progfile)
+                else:
+                    progjson = json.load(progfile.read())
+                pubkey = base64.b64decode(progjson['publickey'])
+                progfile.close()
+            for key in os.listdir('./files/progpubkeys'):
+                with open('./files/progpubkeys/' + key, 'rb') as keyfile:
+                    if keyfile.read() == pubkey:
+                        keyexists = True
+                        break
+            if not keyexists:
+                keyfilename = input('Enter a name for the file for the public key (without the extension): ') + '.pem'
+                with open(keyfilename, 'wb') as keyfile:
+                    keyfile.write(pubkey)
+                    keyfile.close()
+            else:
+                print('This public key is already trusted')
+elif cmds[0] == 'update': # type: ignore
+    rootRepoFolder = './files/cfg/proginstaller/repositories/'
+    print('Checking for root repositories folder')
+    if os.path.exists(rootRepoFolder):
+        print('Root repositories folder found. Continuing')
+    else:
+        print('Root repositories folder not found. Creating a new one.')
+        os.mkdir(rootRepoFolder)
+    print('Checking for builtin repository')
+    if os.path.exists(rootRepoFolder + 'builtinRepository.json'):
+        print('Builtin repository found. Continuing.')
+    else:
+        print('Builtin repository not found. Downloading.')
+        uri = 'https://'
+        downloadFile(uri, rootRepoFolder + 'builtinRepository.json')
+    programsToUpgrade: list = []
+    for repo in os.listdir(rootRepoFolder):
+        print(f'Getting data from {repo}')
+        repoDataOld: dict = {}
+        with open(rootRepoFolder + repo) as repoFile:
+            if isinstance(repoFile, str):
+                repoDataOld = json.load(repoFile)
+            else:
+                repoDataOld = json.load(repoFile.read())
+        repoDownloadLatestURI = repoDataOld['updateURI']
+        try:
+            downloadFile(repoDownloadLatestURI, rootRepoFolder + repo)
+        except Exception:
+            with open(rootRepoFolder + repo, 'w') as repoFile:
+                repoFile.write(json.dump(repoDataOld))
+        repoDataNew: dict = {}
+        with open(rootRepoFolder + repo) as repoFile:
+            if isinstance(repoFile, str):
+                repoDataNew = json.load(repoFile)
+            else:
+                repoDataNew = json.load(repoFile.read())
+        for prog in repoDataNew['programs']:
+            if not repoDataNew['programs'][prog]['version'] == repoDataOld['programs'][prog]['version']:
+                if prog in os.listdir('./files/bin/'):
+                    programsToUpgrade.append(prog)
+    oldProgramsToUpgrade: list = []
+    if os.path.exists('./files/cfg/proginstaller/programsToUpgrade'):
+        with open('./files/cfg/proginstaller/programsToUpgrade') as ptuFile:
+            if isinstance(ptuFile, str):
+                oldProgramsToUpgrade = json.load(ptuFile)
+            else:
+                oldProgramsToUpgrade = json.load(ptuFile.read())
+    for prog in oldProgramsToUpgrade:
+        if not prog in programsToUpgrade:
+            programsToUpgrade.append(prog)
+    with open('./files/cfg/proginstaller/programsToUpgrade', 'w') as ptuFile:
+        ptuFile.write(json.dump(programsToUpgrade))
+        ptuFile.close()
+    print(f'Done updating repositories. There are now {len(programsToUpgrade)} programs to upgrade.')
+    print('Upgrade programs with installer upgrade')

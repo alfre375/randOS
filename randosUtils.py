@@ -6,11 +6,13 @@ import requests # type: ignore
 from cryptography.hazmat.primitives import hashes # type: ignore
 from cryptography.hazmat.primitives.asymmetric import padding #type: ignore
 from cryptography.hazmat.primitives import serialization #type: ignore
+import interpreter
 
 class ExecFinishedEarly(Exception):
     pass
 
 def validateProgram(filename: str, keysfoldername: str = '/progpubkeys'):
+    #print(f'Validating program {filename}')
     # Load the JSON from the file
     data: dict = {}
     if not (os.path.exists('./files' + filename) and os.path.isfile('./files' + filename)):
@@ -97,19 +99,68 @@ def listsHaveCommonItem(a: list, b: list):
             return True
     return False
 
-def executeCommand(cmds: list, sudoPowers: bool):
+def parseROSCVal(value: str, perms: list, information: dict) -> any:
+    #print(value)
+    if value == 'getuserdir()':
+        if 'directoryInformation' in perms:
+            return information['directory']
+
+def hasPermission(userUUID: str, perm: str, file: str, filePerms: dict):
+    if not file in filePerms:
+        return False
+    filePermsSpecific: dict = filePerms[file]
+    filePermsList = list(filePermsSpecific['permissions'])
+    if not filePermsSpecific:
+        return False
+    if filePermsSpecific['owner'] == userUUID:
+        if (perm == 'r') and (filePermsList[0] == 'r'):
+            return True
+        if (perm == 'w') and (filePermsList[1] == 'w'):
+            return True
+        if (perm == 'x') and (filePermsList[2] == 'x'):
+            return True
+    else:
+        if (perm == 'r') and (filePermsList[6] == 'r'):
+            return True
+        if (perm == 'w') and (filePermsList[7] == 'w'):
+            return True
+        if (perm == 'x') and (filePermsList[8] == 'x'):
+            return True
+    return False
+
+def getExactLocation(relativeLocation: str, parent: str, workingDir: str):
+    if not relativeLocation.startswith('/'):
+        relativeLocation = workingDir + '/' + relativeLocation
+    res: str = str(os.path.abspath(str(os.path.abspath(parent)) + relativeLocation))
+    if res.startswith(str(os.path.abspath(parent))):
+        return res
+    return None
+
+def updateFilePermsFile(filePerms: dict):
+    with open('./files/filePermissions.json', 'w') as fpfile:
+        fpfile.write(json.dumps(filePerms))
+
+def executeCommand(cmds: list, sudoPowers: bool, information: dict, filePerms: dict) -> bool:
     cmd = cmds[0]
     code = ''
     fc: dict = {}
-    utk, filesOfCorrespondingKeys, khv, validation = validateProgram('./files/bin/' + cmd)
+    if not os.path.exists(f"./files/bin/{cmd}"):
+        print(f"The command {cmd} was not found in /bin")
+        return (False, None)
+    userUUID = information['userUUID']
+    if not hasPermission(userUUID, 'x', f'/bin/{cmd}', filePerms):
+        print('You do not have permission to access this file')
+        return (False, None)
+    utk, filesOfCorrespondingKeys, khv, validation = validateProgram('/bin/' + cmd)
     if not (utk and khv and validation):
         print('Validation failed. Program may be tampered with or from an unauthorised source.')
-        return False
+        print(utk, khv, validation)
+        return (False, None)
     with open('./files/bin/' + cmd) as file:
-        if isinstance(file, str):
-            fc = json.load(file)
-        else:
-            fc = json.load(file.read())
+        #if isinstance(file, str):
+        #    fc = json.load(file)
+        #else:
+        fc = json.load(file)
     if ('sudo.runAsIs' in fc['permissions']):
         code = base64.b64decode(fc['code']).decode()
         canRunAsIs: list = []
@@ -122,17 +173,37 @@ def executeCommand(cmds: list, sudoPowers: bool):
             try:
                 exec(code)
             except ExecFinishedEarly:
-                return True
+                return (True, None)
             except KeyboardInterrupt:
                 print('Interrupted with ^C')
-                return False
+                return (False, None)
             except Exception as e:
                 print(f'Exception: {e}')
-                return False
-            return True
+                return (False, None)
+            return (True, None)
         else:
             print('This action requires elevated privileges.')
-            return False
+            return (False, None)
+    else:
+        #print('Running using RandOSCode...')
+        code = base64.b64decode(fc['code']).decode()
+        #print(code)
+        providedInformation = information
+        providedInformation['activeDirectory'] = information['directory']
+        providedInformation['directory'] = None
+        providedInformation['permissions'] = fc['permissions']
+        interpreterInstance = interpreter.InterpretationInstance(providedInformation, filePerms)
+        codes = interpreterInstance.lex(code)
+        for line in codes:
+            if line == '':
+                continue
+            #print(f'Now executing... {line}')
+            try:
+                interpreterInstance.run(line)
+            except Exception as e:
+                print(e)
+                return (False, {'newFilePerms': interpreterInstance.filePerms})
+        return (True, {'newFilePerms': interpreterInstance.filePerms})
 
 def downloadFile(uri: str, filename: str):
     """

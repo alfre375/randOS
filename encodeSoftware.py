@@ -24,6 +24,15 @@ if option == 'encode':
     pycode = ''
     perms = []
     for line in codelines:
+        lines = line.split(' ')
+        if lines[0] == 'PERMISSIONS':
+            codelines.remove(line)
+            newperms = lines[1].split(',')
+            for perm in newperms:
+                perms.append(perm.strip())
+        else:
+            pycode = pycode + '\n' + line
+    """for line in codelines:
         linesplit = line.split(' ')
         pyline = ''
         if linesplit[0] == 'PERMISSIONS':
@@ -34,7 +43,7 @@ if option == 'encode':
             pyline = linesplit[1] + ' = testValueOf(' + line.split(' ',3)[3] + ', cmdPerms)'
         elif linesplit[0] == 'OUT':
             pyline = 'print('+ line.split(' ', 1)[1] +')'
-        pycode = pycode + '\n' + pyline
+        pycode = pycode + '\n' + pyline"""
     print('Pycode:\n' + pycode)
     pycode = base64.b64encode(pycode.encode())
     pycodehash = hashlib.sha256(pycode).hexdigest()
