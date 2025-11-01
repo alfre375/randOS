@@ -1,3 +1,9 @@
 files
 privatekey.pem
 devprojects
+nodeRepositoryHost/data
+nodeRepositoryHost/sslcfg
+nodeRepositoryHost/.env
+nodeRepositoryHost/privatekey.pem
+nodeRepositoryHost/node_modules
+rust-rosc-tools/target

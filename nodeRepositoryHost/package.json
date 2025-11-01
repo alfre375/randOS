@@ -1,0 +1,24 @@
+{
+  "name": "node-repository-host-randos",
+  "version": "0.0.0",
+  "description": "A nodejs and expressjs based repository for RandOS programs",
+  "keywords": [
+    "repository",
+    "RandOS",
+    "nodejs",
+    "expressjs"
+  ],
+  "license": "ISC",
+  "author": "Luna Solar de la Fuente",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "node --inspect server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "https": "^1.0.0"
+  }
+}
