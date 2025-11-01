@@ -113,6 +113,8 @@ class InterpretationInstance():
             elif s == 'not':
                 return not vsplitcompiled[0]
             elif s == 'getActiveDirectory':
+                if not ('directoryInformation' in self.providedInformation['permissions']):
+                    raise Exception('Permission directoryInformation is not in program metadata')
                 return self.providedInformation['activeDirectory']
             elif s == 'writeToFile':
                 filename: str = vsplitcompiled[0]
