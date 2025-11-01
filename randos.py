@@ -147,7 +147,7 @@ if (len(users) == 0):
         else:
             print('canRunAsIs config file found. continuing')
         # Add defualt program files
-        builtinPrograms = ['pwd']
+        builtinPrograms = ['pwd', 'cd']
         for prog in builtinPrograms:
             if os.path.exists('./files/bin/' + prog):
                 print(prog + ' program file found. Skipping.')
@@ -218,6 +218,8 @@ try:
                 if 'newFilePerms' in changes:
                     filePerms = changes['newFilePerms']
                     updateFilePermsFile()
+                if 'newActiveDirectory' in changes:
+                    cwd = changes['newActiveDirectory']
         except KeyboardInterrupt:
             print("")
             continue

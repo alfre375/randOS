@@ -192,6 +192,7 @@ def executeCommand(cmds: list, sudoPowers: bool, information: dict, filePerms: d
         providedInformation['activeDirectory'] = information['directory']
         providedInformation['directory'] = None
         providedInformation['permissions'] = fc['permissions']
+        providedInformation['cmds'] = cmds
         interpreterInstance = interpreter.InterpretationInstance(providedInformation, filePerms)
         codes = interpreterInstance.lex(code)
         for line in codes:
@@ -202,8 +203,8 @@ def executeCommand(cmds: list, sudoPowers: bool, information: dict, filePerms: d
                 interpreterInstance.run(line)
             except Exception as e:
                 print(e)
-                return (False, {'newFilePerms': interpreterInstance.filePerms})
-        return (True, {'newFilePerms': interpreterInstance.filePerms})
+                return (False, {'newFilePerms': interpreterInstance.filePerms, 'newActiveDirectory': interpreterInstance.providedInformation['activeDirectory']})
+        return (True, {'newFilePerms': interpreterInstance.filePerms, 'newActiveDirectory': interpreterInstance.providedInformation['activeDirectory']})
 
 def downloadFile(uri: str, filename: str):
     """

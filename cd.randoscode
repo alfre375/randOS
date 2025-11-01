@@ -1,0 +1,2 @@
+declare directory = getSplitCommand(1);
+changeActiveDirectory(directory);
