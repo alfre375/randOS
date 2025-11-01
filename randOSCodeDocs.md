@@ -1,28 +1,28 @@
 # Important functions
 ## out(text: str)
-Returns: None
+Returns: None\
 This function prints a value to the console
 
 ## in(text: str)
-Returns: The inputted text (str)
+Returns: The inputted text (str)\
 This function prints text to the screen, then gives the user an opportunity to enter text, then returns the text when the user presses the return key
 
 ## equals(input...)
-Returns: Whether all inputs are equal to eachother (bool)
+Returns: Whether all inputs are equal to eachother (bool)\
 This function takes an unlimited number of inputs and returns true if all inputs are equal and false otherwise
 
 ## not(input: bool)
-Returns: The opposite of input (bool)
+Returns: The opposite of input (bool)\
 If true is given as an input, the function returns false, and if false is given as an input, the function returns true
 
 ## getActiveDirectory()
-Returns: The current working directory (str)
+Returns: The current working directory (str)\
 Required permissions: directoryInformation
 This function takes no inputs and returns the current working directory
 
 ## writeToFile(filename: str, textToWrite: str)
-Returns: Whether the operation was successful (bool)
-Required permissions: writeToFile
+Returns: Whether the operation was successful (bool)\
+Required permissions: writeToFile\
 This function will, providing the necessary permissions are met (for existing files: user executing command must have write permission of the existing file; for new files: user executing command must have write permission of the directory in which to create the file), write to a file with the name in filename the text in textToWrite, creating the file if it doesn't exist. IMPORTANT NOTE: an exception is raised if neither the file nor the directory in which the file is meant to be created in exist.
 
 # General Syntax
@@ -53,11 +53,11 @@ Permissions that make the program unrunnable by users other than root begin with
 
 ## Permissions That Exist
 ### sudo.runAsIs
-Restrictions: Can only be run as root, key with which program is signed must be listed in /cfg/canRunAsIs
+Restrictions: Can only be run as root, key with which program is signed must be listed in /cfg/canRunAsIs\
 This permission is used to run code as python instead of ROSC. It is very dangerous as it can escape the simulated environment. Excersise extreme caution when executing any programs that have this permission.
 
 ### directoryInformation
-Restrictions: none
+Restrictions: none\
 This permission is required to view directory information, and is required in order to execute the getActiveDirectory() function.
 
 # Literal Expressions
