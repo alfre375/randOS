@@ -1,3 +1,4 @@
+debugMode = False
 import re, ast
 import os
 import randosUtils
@@ -14,6 +15,24 @@ def exactPath(relativePath: str, osPath: str):
         return path
     else:
         return False
+    
+def getSysDirFromRelative(relativePath: str, cwd: str, root: str) -> str | None:
+    if not relativePath.startswith('/'):
+        relativePath = cwd + '/' + relativePath
+    relativePath = relativePath.replace('\\', '/')
+    root = root.replace('\\', '/')
+    absPath = os.path.abspath(root + '/' + relativePath)
+    absPath.replace('\\', '/')
+    if not absPath.startswith(root):
+        return None
+    absPath = absPath.removeprefix(root)
+    if not absPath.startswith('/'):
+        absPath = '/'
+    return absPath
+
+def debug(*msg: str):
+    if debugMode:
+        print('[DEBUG]', *msg)
 
 class InvalidFunctionException(Exception):
     pass
@@ -45,6 +64,7 @@ class InterpretationInstance():
         isStringLiteral: int = 0
         isSpecialCharacter: bool = False
         wasSpecialCharacter: bool = False
+        parenthesisLevel: int = 0
         curlyDepth: int = 0
         for char in chars:
             if (char == '{') and (not isStringLiteral):
@@ -56,7 +76,7 @@ class InterpretationInstance():
                 continue
             #print(char, isStringLiteral, isSpecialCharacter, wasSpecialCharacter)
             if char == separator:
-                if isStringLiteral == 0:
+                if (isStringLiteral == 0) and (parenthesisLevel == 0):
                     lines.append(currentLine)
                     currentLine = ''
                     continue
@@ -75,6 +95,12 @@ class InterpretationInstance():
                     isStringLiteral = 2
                 elif (not isSpecialCharacter) and (isStringLiteral == 2):
                     isStringLiteral = 0
+            elif char == '(':
+                if (not isSpecialCharacter):
+                    parenthesisLevel += 1
+            elif char == ')':
+                if (not isSpecialCharacter):
+                    parenthesisLevel -= 1
             currentLine += char
             if wasSpecialCharacter:
                 isSpecialCharacter = False
@@ -87,7 +113,7 @@ class InterpretationInstance():
 
     def run(self, line: str) -> None | str:
         line = line.strip()
-        #print(line)
+        debug('RUNNING: ', line)
         f = re.match(r'declare ([a-zA-Z]+)\s*=\s*([\s\S]+)', line)
         if f:
             #print(f)
@@ -211,14 +237,15 @@ class InterpretationInstance():
                         return file.read()
             elif s == 'changeActiveDirectory':
                 directory: str = vsplitcompiled[0]
-                if not directory.startswith('/'):
-                    directory = self.providedInformation['activeDirectory'] + '/' + directory
-                #print('Changing directory to ' + directory)
+                directory = getSysDirFromRelative(directory, self.providedInformation['activeDirectory'], self.providedInformation['root'])
+                if not directory:
+                    raise Exception('Directory is outside of system')
+                debug('Changing directory to ' + directory)
                 while '//' in directory:
                     directory.replace('//', '/')
                 directoryExact = randosUtils.getExactLocation(directory, self.providedInformation['root'], self.providedInformation['activeDirectory'])
-                #print('Exact directory: ', directoryExact)
-                if randosUtils.hasPermission(self.providedInformation['userUUID'], 'r', directory, self.filePerms):
+                debug('Exact directory: ', directoryExact)
+                if not randosUtils.hasPermission(self.providedInformation['userUUID'], 'r', directory, self.filePerms):
                     raise Exception('You do not have permission to access this directory')
                 if directoryExact and os.path.exists(directoryExact):
                     self.providedInformation['activeDirectory'] = directoryExact.replace('\\','/').removeprefix(self.providedInformation['root'].replace('\\','/'))
@@ -244,7 +271,7 @@ class InterpretationInstance():
                 if (vsplitcompiled[0] < 0) or (vsplitcompiled[0] != float(maths.floor(vsplitcompiled[0]))):
                     raise Exception('Index must be a whole number (n >= 0 and n = roundDown(n))')
                 #print('Input found, sending specific part')
-                if len(self.providedInformation['cmds']) >= vsplitcompiled[0]:
+                if (len(self.providedInformation['cmds']) - 1) < vsplitcompiled[0]:
                     return None
                 return self.providedInformation['cmds'][int(vsplitcompiled[0])]
         f = a.match(line)
@@ -276,6 +303,10 @@ class InterpretationInstance():
             return float(line)
         except Exception:
             print('',end='')
+        if line == 'none':
+            return None
+        if not line:
+            return
         raise Exception(f'Invalid code {line}')
 
 #interpreter = InterpretationInstance({ 'activeDirectory': '/' })

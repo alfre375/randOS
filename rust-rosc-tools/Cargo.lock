@@ -784,7 +784,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustROSCTools"
+name = "rust-rosc-tools"
 version = "0.1.0"
 dependencies = [
  "reqwest",

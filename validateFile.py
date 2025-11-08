@@ -43,7 +43,8 @@ if hashlib.sha256(correspondingKey).hexdigest() == pubkeyhash:
     print('Public key hash valid')
 
 public_key = serialization.load_pem_public_key(publickey)
-
+sig = base64.b64decode(data['signature'])
+print(hashlib.sha256(pycode.encode()).hexdigest().encode())
 try:
     public_key.verify(
         signature,

@@ -1,2 +1,7 @@
 declare directory = getSplitCommand(1);
-changeActiveDirectory(directory);
+if (not(equals(directory, none))) {
+    changeActiveDirectory(directory);
+};
+if (equals(directory, none)) {
+    out("No directory was specified");
+};

@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives import serialization
 import getpass
 import base64
 import json
+import os
 
 option = sys.argv[1]
 
@@ -15,7 +16,7 @@ if option == 'encode':
     privatekey = None
     codelines = None
     if len(sys.argv) < 6:
-        print('Run: python3.13 encodeSoftware.py encode [PRIVATEKEY] [INPUT] [OUTPUT] [PUBLIC KEY]')
+        print('Run: python3.13 encodeSoftware.py encode [PRIVATEKEY] [INPUT] [OUTPUT] [PUBLIC KEY] [VERISON INT INCREMENT]?')
         exit()
     with open(sys.argv[2], 'rb') as privatekeyfile:
         privatekey = privatekeyfile.read()
@@ -82,6 +83,21 @@ if option == 'encode':
         print("Signature validation successful.")
     except Exception as e:
         print(f"Signature validation failed: {e}")
+        
+    versionInt = 0
+    if os.path.exists(sys.argv[4]):
+        with open(sys.argv[4], 'r') as outputfile:
+            if type(outputfile) != 'str':
+                outputfile = outputfile.read()
+            ofj = json.loads(outputfile)
+            if ofj:
+                versionInc = 1
+                if len(sys.argv) >= 7:
+                    versionInc = int(sys.argv[6])
+                if 'version-int' in ofj:
+                    versionInt = ofj['version-int'] + versionInc
+    elif len(sys.argv) >= 7:
+        versionInt = int(sys.argv[6])
 
     # Save the signature and hashed code to the output file
     out = {
@@ -90,6 +106,7 @@ if option == 'encode':
         'permissions': perms,
         'code': pycode.decode(),
         'signature': base64.b64encode(signature).decode(),
+        'version-int': versionInt
     }
     print(json.dumps(out, indent=4))
     with open(sys.argv[4], 'w') as outputfile:

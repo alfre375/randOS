@@ -107,12 +107,14 @@ def parseROSCVal(value: str, perms: list, information: dict) -> any:
 
 def hasPermission(userUUID: str, perm: str, file: str, filePerms: dict):
     if not file in filePerms:
+        print('File does not have permissions configured')
         return False
     filePermsSpecific: dict = filePerms[file]
     filePermsList = list(filePermsSpecific['permissions'])
     if not filePermsSpecific:
         return False
     if filePermsSpecific['owner'] == userUUID:
+        #print(f'File is owned by user; fpl: {filePermsList}; perm: {perm}')
         if (perm == 'r') and (filePermsList[0] == 'r'):
             return True
         if (perm == 'w') and (filePermsList[1] == 'w'):
@@ -120,6 +122,7 @@ def hasPermission(userUUID: str, perm: str, file: str, filePerms: dict):
         if (perm == 'x') and (filePermsList[2] == 'x'):
             return True
     else:
+        #print(f'File is NOT owned by user; fpl: {filePermsList}; perm: {perm}')
         if (perm == 'r') and (filePermsList[6] == 'r'):
             return True
         if (perm == 'w') and (filePermsList[7] == 'w'):
