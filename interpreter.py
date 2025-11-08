@@ -255,13 +255,13 @@ class InterpretationInstance():
                     raise Exception('Directory does not exist within simulated environment')
                 return None
             elif s == 'or':
-                for input in vsplitcompiled:
-                    if input == True:
+                for function_input in vsplitcompiled:
+                    if function_input == True:
                         return True
                 return False
             elif s == 'and':
-                for input in vsplitcompiled:
-                    if input == False:
+                for function_input in vsplitcompiled:
+                    if function_input == False:
                         return False
                 return True
             elif s == 'getSplitCommand':
