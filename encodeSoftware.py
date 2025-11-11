@@ -9,6 +9,12 @@ import base64
 import json
 import os
 
+if len(sys.argv) <= 1:
+    print('Options:')
+    print('  encode: encodes the program into a file that can be read by randOS')
+    print('  encode-as-is: like the encode option, but for programs that run with pyhton')
+    print('  genkeypair: generate a public/private keypair supported for this purpose (required to build applications)')
+    exit()
 option = sys.argv[1]
 
 if option == 'encode':

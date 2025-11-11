@@ -46,6 +46,26 @@ Iterates over booleanValue, and if none are false, returns true, otherwise, retu
 Returns: The entered command separated by spaces into a list, at the specified index if specified, or the entire list otherwise\
 If a valid index (index must be a whole number) is specified, the function returns the item of the comma-separated command list at the specified index. If no index is specified, the functionr returns the entire comma-separated command list. If an invalid index is specified, the command raises an exception. Returns none if the index is valid but is not within the comma-separated command list.
 
+## strMerge(strings...: str)
+Returns: All the strings combined in the order they are passed (str)\
+Merges all the strings provided in order without any separator in between
+
+## add(numbers...: number)
+Returns: The sum of all numbers passed (number)\
+Adds together all numbers passed. Raises exception if a value that is passed is not of type `number`.
+
+## isGreater(number_a: number, number_b: number)
+Returns: Whether number_a is greater than number_b (bool)\
+If `number_a > number_b`, returns `true`. Otherwise, returns `false`. If both numbers are equal, this function will return `false`. If this is not the desired result, see `isGreaterEq`.
+
+## isGreaterEq(number_a: number, number_b: number)
+Returns: Whether number_a is greater than or equal to number_b (bool)\
+If `number_a >= number_b`, returns `true`. Otherwise, returns `false`. If both numbers are equal, this function will return `true`. If this is not the desired result, see `isGreater`.
+
+## strToNumber(string: str)
+Returns: A number of the provided string (number)\
+The function returns a number based on the provided string. Function will raise an error if a value other than a string is provided.
+
 # General Syntax
 ## Variables
 These are simple. Variables are declared as follows: `declare {VARIABLE_NAME} = {VALUE};`
@@ -61,6 +81,15 @@ Conditions must be enclosed in parenthesis, if trues must be enclosed in curly b
 
 ## Semicolons
 At the end of every instruction in ROSC, there must be a semicolon. This includes variable declarations, any functions except those in conditions of if statements, and conditional statements.
+
+## Loops
+Loops can be declared as follows:
+```
+while ({CONDITION}) {
+    {IF TRUE}
+};
+```
+If no condition is specified (note: even if no condition is specified, the parenthesis are still required), it will repeat until the `break;` command is given. Within these loops, you can use the `break;` command to exit the loop, and the `continue;` command to skip to the next iteration of the loop. Similarly, the `break-if ({CONDITION});` command exits the loop iff the condition is true, and the `continue-if ({CONDITION});` command skips to the next iteration of the loop iff the condition is true. However, as of right now, these functions (break, break-if, continue, and continue-if) only work at the base of the loop — that is, they do not work inside of if statements.
 
 # Permissions
 ## Reasoning

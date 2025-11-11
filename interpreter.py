@@ -1,4 +1,4 @@
-debugMode = False
+debugMode = True
 import re, ast
 import os
 import randosUtils
@@ -8,6 +8,7 @@ r = re.compile(r'''(['"])((?:\\.|(?!\1).)*)\1''')
 c = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\(([\s\S]*)\)\s*$''')
 a = re.compile(r'''^\s*if\s+\(([\s\S]*)\)\s*{([\s\S]*)}\s*$''')
 REGEX_LITERAL_LIST = re.compile(r'''^\s*\[([\s\S]*)\]\s*$''')
+REGEX_WHILE = re.compile(r'''^\s*while\s+\(([\s\S]*)\)\s*{([\s\S]*)}$''')
 
 def exactPath(relativePath: str, osPath: str):
     path: str = str(os.path.abspath(osPath + relativePath))
@@ -274,6 +275,77 @@ class InterpretationInstance():
                 if (len(self.providedInformation['cmds']) - 1) < vsplitcompiled[0]:
                     return None
                 return self.providedInformation['cmds'][int(vsplitcompiled[0])]
+            elif s == 'strMerge':
+                endStr = ''
+                for val in vsplitcompiled:
+                    endStr += val
+                return endStr
+            elif s == 'add':
+                total = 0
+                for val in vsplitcompiled:
+                    if not type(val) == float:
+                        raise TypeError('TypeError: cannot add a non-number value')
+                    total += val
+                return total
+            elif s == 'isGreater':
+                if len(vsplitcompiled) != 2:
+                    raise Exception('Function can only compare exactly 2 numbers')
+                if vsplitcompiled[0] > vsplitcompiled[1]:
+                    return True
+                return False
+            elif s == 'isGreaterEq':
+                if len(vsplitcompiled) != 2:
+                    raise Exception('Function can only compare exactly 2 numbers')
+                if vsplitcompiled[0] >= vsplitcompiled[1]:
+                    return True
+                return False
+            elif s == 'strToNumber':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take one value, {len(vsplitcompiled)} values given')
+                if type(vsplitcompiled[0]) != str:
+                    raise TypeError('TypeError: strToNumber only takes a str value')
+                return float(vsplitcompiled[0])
+        f = REGEX_WHILE.match(line)
+        if f:
+            
+            action = f.group(2)
+            condition = True
+            while True:
+                if not condition:
+                    break
+                condition = f.group(1)
+                if condition == '':
+                    condition = 'true'
+                condition = self.run(condition)
+                debug('CONDITION: ', condition)
+                if not condition:
+                    break
+                actions = self.lex(action)
+                for actionsLine in actions:
+                    debug('RUNNING: ', actionsLine)
+                    if re.match(r'''^\s*continue\s*$''', actionsLine):
+                        condition = False # stop further repeats of outer loop
+                        break # break from inner loop
+                    elif re.match(r'''^\s*break\s*$''', actionsLine):
+                        break
+                    elif re.match(r'''^\s*continue-if\s*\(([\s\S]*)\)\s*$''', actionsLine):
+                        condition_inner = re.match(r'''^\s*continue-if\s*\(([\s\S]*)\)\s*$''', actionsLine).group(1)
+                        condition_inner = self.run(condition_inner)
+                        if condition_inner:
+                            break # break from inner loop
+                        else:
+                            continue
+                    elif re.match(r'''^\s*break-if\s*\(([\s\S]*)\)\s*$''', actionsLine):
+                        debug('conditional break')
+                        condition_inner = re.match(r'''^\s*break-if\s*\(([\s\S]*)\)\s*$''', actionsLine).group(1)
+                        condition_inner = self.run(condition_inner)
+                        if condition_inner:
+                            condition = False # stop further repeats of outer loop
+                            break # break from inner loop
+                        else:
+                            continue
+                    self.run(actionsLine)
+            return
         f = a.match(line)
         if f:
             condition = f.group(1)
