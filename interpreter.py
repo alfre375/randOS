@@ -35,7 +35,7 @@ def debug(*msg: str):
     if debugMode:
         print('[DEBUG]', *msg)
         
-def numToStr(num: list) -> list:
+def numToStr(num: dict) -> dict:
     if num['class'] != 'number':
         raise TypeError('numToStr [INTERNAL FUNCTION] only accepts number')
     return {
