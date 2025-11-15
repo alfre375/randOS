@@ -100,6 +100,9 @@ fn {FUNCTION_NAME}({VARNAME: VARTYPE}) {
 ```
 New variables made in functions are limited to the scope of the function, and are deleted after the function ends. However, any existing variables that are changed are updated after the function is complete. Functions have the same requirements for names as variables. The functions can take several parameters, separated by commas. The vartype should be a class.
 
+## Imports
+Imports are simple, but not yet fully functional. For now, imports are relative to the main file, but this is subject to change, so avoid importing files from other directories in imported files from other directories for now. To import a file, do `import {FILEPATH RELATIVE TO MAIN FILE}`. Imports simply put all the code of the import into the main code, so they are for organisational purposes only. Import statements only work in the root layer. Imports are handled during packaging, not during runtime.
+
 # Permissions
 ## Reasoning
 Permissions are used as an easy indicator for end-users as to what a program does to their system. They are stored in plain text in the program files.

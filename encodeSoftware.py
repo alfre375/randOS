@@ -8,6 +8,9 @@ import getpass
 import base64
 import json
 import os
+import interpreter
+import re
+from pathlib import Path
 
 if len(sys.argv) <= 1:
     print('Options:')
@@ -52,6 +55,29 @@ if option == 'encode':
             pyline = 'print('+ line.split(' ', 1)[1] +')'
         pycode = pycode + '\n' + pyline"""
     print('Pycode:\n' + pycode)
+    # Get imports
+    interpretationInstance = interpreter.InterpretationInstance()
+    pycodeLexed = interpretationInstance.lex(pycode)
+    REGEX_IMPORT = re.compile(r'''^\s*import ([\s\S]+)\s*$''')
+    while True:
+        stop = True
+        for pyline in pycodeLexed:
+            n = REGEX_IMPORT.match(pyline)
+            if n:
+                path_of_main = Path(sys.argv[3])
+                path = (path_of_main.parent / n.group(1).strip()).resolve()
+                if not os.path.exists(path):
+                    raise Exception(f'No such file {path}')
+                with open(path, 'r') as file:
+                    if type(file) == str:
+                        pycode.replace(f'import {n.group(1)}', file)
+                    else:
+                        pycode.replace(f'import {n.group(1)}', file)
+        for pyline in pycodeLexed:
+            if REGEX_IMPORT.match(pyline):
+                stop = False
+        if stop:
+            break
     pycode = base64.b64encode(pycode.encode())
     pycodehash = hashlib.sha256(pycode).hexdigest()
     # Load the private key (handle encrypted or non-encrypted keys)
