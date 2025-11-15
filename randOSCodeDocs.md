@@ -68,7 +68,7 @@ The function returns a number based on the provided string. Function will raise 
 
 # General Syntax
 ## Variables
-These are simple. Variables are declared as follows: `declare {VARIABLE_NAME} = {VALUE};`
+These are simple. Variables are declared as follows: `declare {VARIABLE_NAME} = {VALUE};`. Their names should follow the regex `[a-zA-Z_]+`
 
 ## Conditional Statements
 Conditional statements are denoted in RandOSCode as follows:
@@ -90,6 +90,15 @@ while ({CONDITION}) {
 };
 ```
 If no condition is specified (note: even if no condition is specified, the parenthesis are still required), it will repeat until the `break;` command is given. Within these loops, you can use the `break;` command to exit the loop, and the `continue;` command to skip to the next iteration of the loop. Similarly, the `break-if ({CONDITION});` command exits the loop iff the condition is true, and the `continue-if ({CONDITION});` command skips to the next iteration of the loop iff the condition is true. However, as of right now, these functions (break, break-if, continue, and continue-if) only work at the base of the loop — that is, they do not work inside of if statements.
+
+## Functions
+Functions can be declared as follows:
+```
+fn {FUNCTION_NAME}({VARNAME: VARTYPE}) {
+    {CONTENTS}
+};
+```
+New variables made in functions are limited to the scope of the function, and are deleted after the function ends. However, any existing variables that are changed are updated after the function is complete. Functions have the same requirements for names as variables. The functions can take several parameters, separated by commas. The vartype should be a class.
 
 # Permissions
 ## Reasoning
