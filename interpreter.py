@@ -3,12 +3,15 @@ import re, ast
 import os
 import randosUtils
 import math as maths
+import json
 #code = 'out(\';\');'
 REGEX_STRING = re.compile(r'''(['"])((?:\\.|(?!\1).)*)\1''')
 c = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\(([\s\S]*)\)\s*$''')
 a = re.compile(r'''^\s*if\s+\(([\s\S]*)\)\s*{([\s\S]*)}\s*$''')
 REGEX_LITERAL_LIST = re.compile(r'''^\s*\[([\s\S]*)\]\s*$''')
-REGEX_WHILE = re.compile(r'''^\s*while\s+\(([\s\S]*)\)\s*{([\s\S]*)}$''')
+REGEX_WHILE = re.compile(r'''^\s*while\s+\(([\s\S]*)\)\s*{([\s\S]*)}\s*$''')
+REGEX_FUNCTION_DECLARATION = re.compile(r'''^\s*fn\s+([a-zA-Z_]+)\s*\(([\sa-zA-Z_,:]*)\)\s*{([\s\S]*)}\s*$''')
+REGEX_RETURN = re.compile(r'''^\s*return\s+([\s\S]*)''')
 
 def exactPath(relativePath: str, osPath: str):
     path: str = str(os.path.abspath(osPath + relativePath))
@@ -54,12 +57,15 @@ class InterpretationInstance():
         self.functions: dict = {}
         self.classes: dict = {
             'str': {
-                'variablesPublic': {},
+                'variablesStatic': {},
+                'functionsStatic': {},
                 'functions': {
                     'toNumber': {
-                        'takes': [{'name': 'inputString', 'type': 'str'}],
-                        'code': {
-                            'return parseNumber(inputString)'
+                        "['str']": {
+                            'takes': [{'name': 'inputString', 'type': 'str'}],
+                            'code': {
+                                'return parseNumber(inputString)'
+                            }
                         }
                     }
                 }
@@ -125,7 +131,7 @@ class InterpretationInstance():
     def run(self, line: str) -> None | str:
         line = line.strip()
         debug('RUNNING: ', line)
-        f = re.match(r'declare ([a-zA-Z]+)\s*=\s*([\s\S]+)', line)
+        f = re.match(r'declare ([a-zA-Z_]+)\s*=\s*([\s\S]+)', line)
         if f:
             #print(f)
             varname = f.group(1)
@@ -470,6 +476,97 @@ class InterpretationInstance():
                         "value": float(vsplitcompiled[0]['variables']['value'])
                     }
                 }
+            
+            # Custom functions
+            fnp = self.lex(s, '.') # fnp = function name parts
+            function_code = ''
+            function_data_upper: dict = {}
+            if len(fnp) == 1:
+                debug('FNP is a root function')
+                if not self.functions[fnp[0]]:
+                    raise InvalidFunctionException(f'InvalidFunctionException: The function {fnp[0]} does not exist')
+                function_data_upper = self.functions[fnp[0]]
+            else:
+                function_location: list = []
+                if fnp[0] in self.classes:
+                    function_location.append((self.functions[fnp[0]], 'class'))
+                elif fnp[0] in self.variables:
+                    function_location.append((self.variables[fnp[0]], 'variable'))
+                else:
+                    raise InvalidFunctionException(f'InvalidFunctionException: {fnp[0]} is neither a variable nor a class')
+                for i in range(1, len(fnp)-1): # index 0 has already been done (see above)
+                    current, current_type = function_location[i]
+                    if current_type == 'class':
+                        if i < len(fnp)-1:
+                            if fnp[i] in current['variablesStatic']:
+                                function_location.append((current['variablesStatic'][fnp[i]], 'variable'))
+                            else:
+                                raise InvalidFunctionException(f'InvalidFunctionException: {fnp[i]} is not a variable of {function_location}')
+                        else:
+                            if fnp[i] in current['functionsStatic']:
+                                function_data_upper = current['functionsStatic'][fnp[i]]
+                                break
+                            else:
+                                raise InvalidFunctionException(f'InvalidFunctionException: {fnp[i]} is not a function of {function_location}')
+                    else:
+                        raise Exception('This feature is not yet implemented')
+            
+            # Get function_data_lower
+            varclasses = []
+            for var in vsplitcompiled:
+                varclasses.append(var['class'])
+                
+            function_data_lower: dict = {}
+            if json.dumps(varclasses) in function_data_upper:
+                function_data_lower = function_data_upper[json.dumps(varclasses)]
+            elif '*' in function_data_upper:
+                function_data_lower = function_data_upper['*']
+            else:
+                debug(f'ERROR: neither varclasses (value: {json.dumps(varclasses)}) nor "*" are in fdu (value: {function_data_upper})')
+                raise InvalidFunctionException('Function does not exist with these variables')
+            
+            debug(f'function_data_lower: {function_data_lower}')
+            function_lines = function_data_lower['code']
+            debug(f'function_lines: {function_lines}')
+            
+            # Prepare an InterpretionInstance
+            interpreter = InterpretationInstance(self.providedInformation, self.filePerms)
+            interpreter.variables = self.variables
+            interpreter.classes = self.classes
+            interpreter.functions = self.functions
+            
+            # Get parameters of function
+            i = 0
+            function_variables: dict = {}
+            for var in function_data_lower['variables']:
+                varname = var[0]
+                typeof = var[1]
+                if vsplitcompiled[i]['class'] != typeof:
+                    raise TypeError(f'Incorrect type (should be {typeof}, found {vsplitcompiled[i]['class']})')
+                function_variables[varname] = vsplitcompiled[i]
+                i += 1
+            del i
+            interpreter.variables.update(function_variables)
+            
+            returnValue = None
+            for fline in function_lines:
+                debug(f'RUNNING WITHIN FUNCTION: {fline}')
+                res = interpreter.run(fline)
+                debug(f'Response: {res}')
+                if res and ('return' in res):
+                    returnValue = res['return']
+                    break
+            
+            # Update variable values as needed
+            for var in self.variables:
+                if not (var in interpreter.variables):
+                    del self.variables[var]
+                self.variables = interpreter.variables
+            
+            # Delete the interpreter of this function call and return
+            del interpreter
+            return returnValue
+        
         f = REGEX_WHILE.match(line)
         if f:
             action = f.group(2)
@@ -540,7 +637,44 @@ class InterpretationInstance():
                     self.run(itlLine)
             #print(condition, ifTrue)
             return
-        elif line in self.variables:
+        
+        f = REGEX_FUNCTION_DECLARATION.match(line)
+        if f:
+            function_name = f.group(1)
+            function_code = f.group(3)
+            debug(f.group(2))
+            function_taken_variables = self.lex(f.group(2), ',')
+            variables = []
+            for var in function_taken_variables:
+                debug(var)
+                if not re.match(r'''^\s*[a-zA-Z_]+\s*:\s*[a-zA-Z_]+\s*$''', var):
+                    raise Exception('Invalid format for variables')
+                varsplit = var.split(':')
+                variables.append([varsplit[0].strip(), varsplit[1].strip()])
+            variables_types = []
+            for var in variables:
+                variables_types.append(var[1])
+            
+            if not (function_name in self.functions):
+                self.functions[function_name] = {}
+                
+            self.functions[function_name][json.dumps(variables_types)] = {
+                'code': self.lex(function_code),
+                'takes': variables_types,
+                'variables': variables
+            }
+            return
+        
+        f = REGEX_RETURN.match(line)
+        if f:
+            returnValue = f.group(1)
+            returnValue = self.run(returnValue)
+            return {
+                "return": returnValue
+            }
+        elif line == 'return':
+            return { "return": None }
+        if line in self.variables:
             return self.variables[line]
         f = REGEX_LITERAL_LIST.match(line)
         if f:
