@@ -66,6 +66,18 @@ If `number_a >= number_b`, returns `true`. Otherwise, returns `false`. If both n
 Returns: A number of the provided string (number)\
 The function returns a number based on the provided string. Function will raise an error if a value other than a string is provided.
 
+## getAudioSegmentFromArray(array: list)
+Returns: The audio segment (AudioSegment)\
+The function returns an audio segment formed from the array
+
+## getSineAudioAtFrequency(frequency: number, duration: number, volume: number)
+Returns: The audio segment (AudioSegment)\
+The function returns an audio segment at the given frequency for the specified duration at the specified volume
+
+# play(audio_segment: AudioSegment)
+Returns: none\
+The function plays the given audio segment
+
 # General Syntax
 ## Variables
 These are simple. Variables are declared as follows: `declare {VARIABLE_NAME} = {VALUE};`. Their names should follow the regex `[a-zA-Z_]+`

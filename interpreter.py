@@ -513,6 +513,7 @@ class InterpretationInstance():
                 if vsplitcompiled[0]['class'] != 'AudioSegment':
                     raise TypeError('TypeError: play only takes an AudioSegment value')
                 play(vsplitcompiled[0]['variables']['value'])
+                return
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
