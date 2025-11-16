@@ -507,6 +507,31 @@ class InterpretationInstance():
                         "value": tone
                     }
                 }
+            elif s == 'getAudioSegmentFromWavFile':
+                if not (vsplitcompiled[0]['class'] == 'str'):
+                    raise TypeError('Filename must be string for readFromFile')
+                fileToRead: str = vsplitcompiled[0]['variables']['value']
+                if not ('readFromFile' in self.providedInformation['permissions']):
+                    raise Exception('Permission readFromFile is not in program metadata')
+                
+                filepathExact = randosUtils.getExactLocation(fileToRead, self.providedInformation['root'], self.providedInformation['activeDirectory'])
+                
+                if not filepathExact:
+                    raise Exception('File does not exist within simulated environment')
+                
+                if not randosUtils.hasPermission(self.providedInformation['userUUID'], 'r', fileToRead, self.filePerms):
+                    return {
+                        "class": "bool",
+                        "variables": {
+                            "value": False
+                        }
+                    }
+                return {
+                    "class": "AudioSegment",
+                    "variables": {
+                        "value": AudioSegment.from_file(filepathExact, 'wav')
+                    }
+                }
             elif s == 'play':
                 if len(vsplitcompiled) != 1:
                     raise Exception(f'Function can only take one value, {len(vsplitcompiled)} values given')

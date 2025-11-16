@@ -74,7 +74,12 @@ The function returns an audio segment formed from the array
 Returns: The audio segment (AudioSegment)\
 The function returns an audio segment at the given frequency for the specified duration at the specified volume
 
-# play(audio_segment: AudioSegment)
+## getAudioSegmentFromWavFile(filename: str)
+Returns: An audio segment from the wav file (AudioSegment), or if the user does not have permission to access the file, returns false\
+Required permissions: readFromFile\
+The function will get an audio segment from the specified file
+
+## play(audio_segment: AudioSegment)
 Returns: none\
 The function plays the given audio segment
 
