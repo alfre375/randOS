@@ -4,6 +4,10 @@ import os
 import randosUtils
 import math as maths
 import json
+from pydub import AudioSegment
+from pydub.playback import play
+from pydub.generators import Sine
+import struct
 #code = 'out(\';\');'
 REGEX_STRING = re.compile(r'''(['"])((?:\\.|(?!\1).)*)\1''')
 c = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\(([\s\S]*)\)\s*$''')
@@ -476,6 +480,39 @@ class InterpretationInstance():
                         "value": float(vsplitcompiled[0]['variables']['value'])
                     }
                 }
+            elif s == 'getAudioSegmentFromArray':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take one value, {len(vsplitcompiled)} values given')
+                if vsplitcompiled[0]['class'] != 'list':
+                    raise TypeError('TypeError: getAudioSegmentFromArray only takes a list value')
+                audioSegment = AudioSegment(
+                    data=b''.join(struct.pack('<h', sample) for sample in vsplitcompiled[0]['variables']['value']),
+                    frame_rate=44100,
+                    sample_width=2,
+                    channels=1
+                )
+                return {
+                    "class": "AudioSegment",
+                    "variables": {
+                        "value": audioSegment
+                    }
+                }
+            elif s == 'getSineAudioAtFrequency':
+                if len(vsplitcompiled) != 3:
+                    raise Exception(f'Function can only take exactly 3 values, {len(vsplitcompiled)} values given')
+                tone: AudioSegment = Sine(vsplitcompiled[0]['variables']['value']).to_audio_segment(vsplitcompiled[1]['variables']['value'], vsplitcompiled[2]['variables']['value'])
+                return {
+                    "class": "AudioSegment",
+                    "variables": {
+                        "value": tone
+                    }
+                }
+            elif s == 'play':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take one value, {len(vsplitcompiled)} values given')
+                if vsplitcompiled[0]['class'] != 'AudioSegment':
+                    raise TypeError('TypeError: play only takes an AudioSegment value')
+                play(vsplitcompiled[0]['variables']['value'])
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts

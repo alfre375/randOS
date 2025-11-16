@@ -56,7 +56,7 @@ if option == 'encode':
         pycode = pycode + '\n' + pyline"""
     print('Pycode:\n' + pycode)
     # Get imports
-    interpretationInstance = interpreter.InterpretationInstance()
+    interpretationInstance = interpreter.InterpretationInstance({}, {})
     pycodeLexed = interpretationInstance.lex(pycode)
     REGEX_IMPORT = re.compile(r'''^\s*import ([\s\S]+)\s*$''')
     while True:
