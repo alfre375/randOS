@@ -203,7 +203,9 @@ def executeCommand(cmds: list, sudoPowers: bool, information: dict, filePerms: d
                 continue
             #print(f'Now executing... {line}')
             try:
-                interpreterInstance.run(line)
+                res = interpreterInstance.run(line)
+                if (res) and (res['return']):
+                    break
             except Exception as e:
                 print(e)
                 return (False, {'newFilePerms': interpreterInstance.filePerms, 'newActiveDirectory': interpreterInstance.providedInformation['activeDirectory']})

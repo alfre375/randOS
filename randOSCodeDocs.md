@@ -1,4 +1,4 @@
-# Important functions
+# Important functions (written in python)
 ## out(text: str)
 Returns: None\
 This function prints a value to the console
@@ -83,6 +83,23 @@ The function will get an audio segment from the specified file
 Returns: none\
 The function plays the given audio segment
 
+## multiply(values...: number)
+Returns: All values multiplied together (number)\
+All values get multiplied together
+
+## exponent(val1: number, val2: number)
+Returns: val1 to the power of val2 (number)\
+One number to the power of another
+
+## sin(val: number)
+Returns: sine of val (number)\
+Returns the sine of val (val should be radian)
+
+# Important functions (written in ROSC)
+## divide(val1: number, val2: number)
+Returns: val1 divided by val2 (number)\
+Division function to divide one number (val1) by another (val2)
+
 # General Syntax
 ## Variables
 These are simple. Variables are declared as follows: `declare {VARIABLE_NAME} = {VALUE};`. Their names should follow the regex `[a-zA-Z_]+`
@@ -116,6 +133,9 @@ fn {FUNCTION_NAME}({VARNAME: VARTYPE}) {
 };
 ```
 New variables made in functions are limited to the scope of the function, and are deleted after the function ends. However, any existing variables that are changed are updated after the function is complete. Functions have the same requirements for names as variables. The functions can take several parameters, separated by commas. The vartype should be a class.
+
+## Returns
+Return statements can be declared with the `return` keyword, like this: `return 22;`. Most of the time, you'd use return statements in functions. They can also return none, which can be done as `return none;` or simply `return;`. For now, return statements will not work as direct inputs to other functions. For example, trying to run `out(return 'Hello, World!');` won't work.
 
 ## Imports
 Imports are simple, but not yet fully functional. For now, imports are relative to the main file, but this is subject to change, so avoid importing files from other directories in imported files from other directories for now. To import a file, do `import {FILEPATH RELATIVE TO MAIN FILE}`. Imports simply put all the code of the import into the main code, so they are for organisational purposes only. Import statements only work in the root layer. Imports are handled during packaging, not during runtime.

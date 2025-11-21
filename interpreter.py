@@ -58,7 +58,17 @@ class InvalidFunctionException(Exception):
 class InterpretationInstance():
     def __init__(self, providedInformation: dict, filePerms: dict):
         self.variables: dict = {}
-        self.functions: dict = {}
+        self.functions: dict = {
+            'divide': {
+                '["number", "number"]': {
+                    'code': [
+                        'return multiply(val1, exponent(val2, -1))'
+                    ],
+                    'takes': ['number', 'number'],
+                    'variables': [['val1', 'number'], ['val2', 'number']]
+                }
+            }
+        }
         self.classes: dict = {
             'str': {
                 'variablesStatic': {},
@@ -141,6 +151,7 @@ class InterpretationInstance():
             varname = f.group(1)
             varval = f.group(2)
             varval = self.run(varval)
+            debug('New variable value: ', varval)
             """vartype = varval['class']
             varval = varval['variables']
             if isinstance(varval, str):
@@ -539,6 +550,42 @@ class InterpretationInstance():
                     raise TypeError('TypeError: play only takes an AudioSegment value')
                 play(vsplitcompiled[0]['variables']['value'])
                 return
+            elif s == 'multiply':
+                total = 1
+                for val in vsplitcompiled:
+                    if not (val['class'] == 'number'):
+                        raise TypeError('TypeError: cannot multiply a non-number value')
+                    total = total * val['variables']['value']
+                return {
+                    "class": "number",
+                    "variables": {
+                        "value": total
+                    }
+                }
+            elif s == 'exponent':
+                if len(vsplitcompiled) != 2:
+                    raise Exception(f'Function can only take exactly two values, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'number'):
+                    raise TypeError('TypeError: cannot find exponent of a non-number value')
+                if not (vsplitcompiled[1]['class'] == 'number'):
+                    raise TypeError('TypeError: cannot find exponent to a non-number value')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': maths.pow(vsplitcompiled[0]['variables']['value'], vsplitcompiled[1]['variables']['value'])
+                    }
+                }
+            elif s == 'sin':
+                if len(vcompiled) != 1:
+                    raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'number'):
+                    raise TypeError('TypeError: cannot find exponent of a non-number value')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': maths.sin(vsplitcompiled[0]['variables']['value'])
+                    }
+                }
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
@@ -604,6 +651,7 @@ class InterpretationInstance():
             for var in function_data_lower['variables']:
                 varname = var[0]
                 typeof = var[1]
+                debug(f'vscompiled: {vsplitcompiled}, i: {i}')
                 if vsplitcompiled[i]['class'] != typeof:
                     raise TypeError(f'Incorrect type (should be {typeof}, found {vsplitcompiled[i]['class']})')
                 function_variables[varname] = vsplitcompiled[i]
@@ -618,6 +666,9 @@ class InterpretationInstance():
                 debug(f'Response: {res}')
                 if res and ('return' in res):
                     returnValue = res['return']
+                    if returnValue == True:
+                        returnValue = None
+                    debug(f'RETURNING: {returnValue}')
                     break
             
             # Update variable values as needed
@@ -732,11 +783,14 @@ class InterpretationInstance():
         if f:
             returnValue = f.group(1)
             returnValue = self.run(returnValue)
+            debug(f'RETURNING: {returnValue}')
+            if returnValue == None:
+                returnValue = True
             return {
                 "return": returnValue
             }
-        elif line == 'return':
-            return { "return": None }
+        elif line.strip() == 'return':
+            return { "return": True }
         if line in self.variables:
             return self.variables[line]
         f = REGEX_LITERAL_LIST.match(line)
