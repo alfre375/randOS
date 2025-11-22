@@ -108,6 +108,14 @@ Returns the number of milliseconds since epoch, which is 1 Jan 1970 at 00h00m00
 Returns: The number resulting from rounding val down (number)\
 Returns val rounded down
 
+## sha256sum(val: str)
+Returns: A sha256 hash of val (str)\
+Returns a hash in hexadecimal form of val
+
+## replace(original: str, search: str, replacement: str)
+Returns: A string with all instances of search in original replaced with replacement (str)\
+Returns a string that is the original, but with all instances of the original string replaced with replacement.
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
