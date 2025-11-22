@@ -8,6 +8,8 @@ from pydub import AudioSegment
 from pydub.playback import play
 from pydub.generators import Sine
 import struct
+import random
+import time
 #code = 'out(\';\');'
 REGEX_STRING = re.compile(r'''(['"])((?:\\.|(?!\1).)*)\1''')
 c = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\(([\s\S]*)\)\s*$''')
@@ -584,6 +586,41 @@ class InterpretationInstance():
                     'class': 'number',
                     'variables': {
                         'value': maths.sin(vsplitcompiled[0]['variables']['value'])
+                    }
+                }
+            elif s == 'randNumBetween':
+                if len(vsplitcompiled) != 2:
+                    raise Exception(f'Function can only take exactly two values, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'number'):
+                    raise TypeError('TypeError: must be numerical values')
+                if not (vsplitcompiled[1]['class'] == 'number'):
+                    raise TypeError('TypeError: must be numerical values')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': random.uniform(vsplitcompiled[0]['variables']['value'], vsplitcompiled[1]['variables']['value'])
+                    }
+                }
+            elif s == 'getCurrentTimestamp':
+                if len(vsplitcompiled) != 0:
+                    raise Exception(f'Function does not take values, {len(vsplitcompiled)} values given')
+                if not ('readCurrentTime' in self.providedInformation['permissions']):
+                    raise Exception('Permission readCurrentTime is not in program metadata')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': time.time() * 1000.0
+                    }
+                }
+            elif s == 'floor':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'number'):
+                    raise TypeError('TypeError: must be numerical values')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': float(maths.floor(vsplitcompiled[0]['variables']['value']))
                     }
                 }
             

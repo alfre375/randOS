@@ -95,6 +95,19 @@ One number to the power of another
 Returns: sine of val (number)\
 Returns the sine of val (val should be radian)
 
+## randNumBetween(low: number, high: number)
+Returns: A random number between the low number and the high number (number)\
+Returns a random number (includes decimals) between the low and high number. If you want an integer, combine the function with floor()
+
+## getCurrentTimestamp()
+Returns: The number of ms since epoch (number)\
+Required permissions: readCurrentTime\
+Returns the number of milliseconds since epoch, which is 1 Jan 1970 at 00h00m00
+
+## floor(val: number)
+Returns: The number resulting from rounding val down (number)\
+Returns val rounded down
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
@@ -165,7 +178,11 @@ This permission is required for the writeToFile() function
 
 ### readFromFile
 Restrictions: none\
-This permission is required for the readFromFile() function
+This permission is required for the readFromFile() function and getAudioSegmentFromWavFile() function
+
+### readCurrentTime
+Restrictions: none\
+This permission is required for the getCurrentTimestamp() function
 
 # Literal Expressions
 ## Lists
