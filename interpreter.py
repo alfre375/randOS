@@ -10,6 +10,7 @@ from pydub.generators import Sine
 import struct
 import random
 import time
+import hashlib
 #code = 'out(\';\');'
 REGEX_STRING = re.compile(r'''(['"])((?:\\.|(?!\1).)*)\1''')
 c = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\(([\s\S]*)\)\s*$''')
@@ -616,11 +617,41 @@ class InterpretationInstance():
                 if len(vsplitcompiled) != 1:
                     raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
                 if not (vsplitcompiled[0]['class'] == 'number'):
-                    raise TypeError('TypeError: must be numerical values')
+                    raise TypeError('TypeError: must be a numerical value')
                 return {
                     'class': 'number',
                     'variables': {
                         'value': float(maths.floor(vsplitcompiled[0]['variables']['value']))
+                    }
+                }
+            elif s == 'sha256sum':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'str'):
+                    raise TypeError('TypeError: must be a string')
+                val = vsplitcompiled[0]['variables']['value']
+                return {
+                    'class': 'str',
+                    'variables': {
+                        'value': hashlib.sha256(vsplitcompiled[0]['variables']['value'].encode('utf-8')).hexdigest()
+                    }
+                }
+            elif s == 'replace':
+                if len(vsplitcompiled) != 3:
+                    raise Exception(f'Function can only take exactly three values, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'str'):
+                    raise TypeError('TypeError: original value must be a string')
+                if not (vsplitcompiled[1]['class'] == 'str'):
+                    raise TypeError('TypeError: search value must be a string')
+                if not (vsplitcompiled[2]['class'] == 'str'):
+                    raise TypeError('TypeError: replacement value must be a string')
+                original: str = vsplitcompiled[0]['variables']['value']
+                search: str = vsplitcompiled[1]['variables']['value']
+                replacement: str = vsplitcompiled[2]['variables']['value']
+                return {
+                    'class': 'str',
+                    'variables': {
+                        'value': original.replace(search, replacement)
                     }
                 }
             
@@ -685,6 +716,7 @@ class InterpretationInstance():
             # Get parameters of function
             i = 0
             function_variables: dict = {}
+            varnamelist = []
             for var in function_data_lower['variables']:
                 varname = var[0]
                 typeof = var[1]
@@ -692,6 +724,7 @@ class InterpretationInstance():
                 if vsplitcompiled[i]['class'] != typeof:
                     raise TypeError(f'Incorrect type (should be {typeof}, found {vsplitcompiled[i]['class']})')
                 function_variables[varname] = vsplitcompiled[i]
+                varnamelist.append(varname)
                 i += 1
             del i
             interpreter.variables.update(function_variables)
@@ -710,6 +743,8 @@ class InterpretationInstance():
             
             # Update variable values as needed
             for var in self.variables:
+                if var in varnamelist:
+                    continue
                 if not (var in interpreter.variables):
                     del self.variables[var]
                 self.variables = interpreter.variables
