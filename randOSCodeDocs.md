@@ -128,6 +128,10 @@ Makes a new list that is like initial but with itemToAdd after all values of ini
 Returns: A list of the characters in stringToSplit (list)\
 Returns a list from separating stringToSplit into characters
 
+## listLen(val: list)
+Returns: the length of val (number)\
+Returns the length of the inputted list
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\

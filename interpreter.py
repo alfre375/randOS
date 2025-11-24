@@ -710,6 +710,17 @@ class InterpretationInstance():
                         'value': listToReturn
                     }
                 }
+            elif s == 'listLen':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'list'):
+                    raise TypeError('TypeError: input to listLen must be a list')
+                return {
+                    'class': 'number',
+                    'variables': {
+                        'value': len(vsplitcompiled[0]['variables']['value'])
+                    }
+                }
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
