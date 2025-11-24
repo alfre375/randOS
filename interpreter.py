@@ -716,11 +716,11 @@ class InterpretationInstance():
             
             # Prepare an InterpretionInstance
             interpreter = InterpretationInstance(self.providedInformation, self.filePerms)
-            interpreter.variables = self.variables
+            interpreter.variables = self.variables.copy()
             if pass_var_of == True:
                 interpreter.variables['self'] = var_of
-            interpreter.classes = self.classes
-            interpreter.functions = self.functions
+            interpreter.classes = self.classes.copy()
+            interpreter.functions = self.functions.copy()
             
             # Get parameters of function
             i = 0
@@ -752,6 +752,8 @@ class InterpretationInstance():
             
             # Update variable values as needed
             for var in self.variables:
+                if var == 'self':
+                    continue
                 if var in varnamelist:
                     continue
                 if not (var in interpreter.variables):
