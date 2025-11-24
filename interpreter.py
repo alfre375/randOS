@@ -18,7 +18,8 @@ a = re.compile(r'''^\s*if\s+\(([\s\S]*)\)\s*{([\s\S]*)}\s*$''')
 REGEX_LITERAL_LIST = re.compile(r'''^\s*\[([\s\S]*)\]\s*$''')
 REGEX_WHILE = re.compile(r'''^\s*while\s+\(([\s\S]*)\)\s*{([\s\S]*)}\s*$''')
 REGEX_FUNCTION_DECLARATION = re.compile(r'''^\s*fn\s+([a-zA-Z_]+)\s*\(([\sa-zA-Z_,:]*)\)\s*{([\s\S]*)}\s*$''')
-REGEX_RETURN = re.compile(r'''^\s*return\s+([\s\S]*)''')
+REGEX_RETURN = re.compile(r'''^\s*return\s+([\s\S]*)$''')
+REGEX_VAR = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*$''')
 
 def exactPath(relativePath: str, osPath: str):
     path: str = str(os.path.abspath(osPath + relativePath))
@@ -78,11 +79,12 @@ class InterpretationInstance():
                 'functionsStatic': {},
                 'functions': {
                     'toNumber': {
-                        "['str']": {
-                            'takes': [{'name': 'inputString', 'type': 'str'}],
-                            'code': {
-                                'return parseNumber(inputString)'
-                            }
+                        "[]": {
+                            'takes': [],
+                            'variables': [],
+                            'code': [
+                                'return strToNumber(self)'
+                            ]
                         }
                     }
                 }
@@ -272,8 +274,8 @@ class InterpretationInstance():
                             dirname = dirname.removeprefix(self.providedInformation['root'].replace('\\','/'))
                             if dirname == '':
                                 dirname = '/'
-                            print(self.providedInformation['root'])
-                            print(dirname)
+                            debug(self.providedInformation['root'])
+                            debug(dirname)
                             if randosUtils.hasPermission(self.providedInformation['userUUID'], 'w', dirname, self.filePerms):
                                 with open(filepathExact, 'w') as file:
                                     file.write(textToWrite)
@@ -654,40 +656,45 @@ class InterpretationInstance():
                         'value': original.replace(search, replacement)
                     }
                 }
+            elif s == 'getItemAtIndex':
+                if len(vsplitcompiled) != 2:
+                    raise Exception(f'Function can only take exactly three values, {len(vsplitcompiled)} values given')
+                if vsplitcompiled[0]['class'] == 'list':
+                    if not (vsplitcompiled[1]['class'] == 'number'):
+                        raise TypeError('TypeError: index must be a number')
+                    ltgif: list = vsplitcompiled[0]['variables']['value'] # ltgif: list to get item from
+                    index: int = maths.floor(vsplitcompiled[1]['variables']['value'])
+                    if index > (len(ltgif) - 1):
+                        raise Exception('Out of index')
+                    return ltgif[index]
+                elif vsplitcompiled[0]['class'] == 'dict':
+                    raise Exception('ROSC does not support dictionaries at this time')
+                else:
+                    raise TypeError('TypeError: getItemAtIndex only takes a list for the item to get index of')
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
             function_code = ''
             function_data_upper: dict = {}
+            var_of = []
+            pass_var_of = False
             if len(fnp) == 1:
                 debug('FNP is a root function')
-                if not self.functions[fnp[0]]:
+                if not (fnp[0] in self.functions):
                     raise InvalidFunctionException(f'InvalidFunctionException: The function {fnp[0]} does not exist')
                 function_data_upper = self.functions[fnp[0]]
             else:
-                function_location: list = []
-                if fnp[0] in self.classes:
-                    function_location.append((self.functions[fnp[0]], 'class'))
-                elif fnp[0] in self.variables:
-                    function_location.append((self.variables[fnp[0]], 'variable'))
+                func_name = fnp.pop()
+                var_of = self.run('.'.join(fnp))
+                if var_of['class'] == 'class':
+                    function_data_upper = self.classes[var_of['variables']['value']]['functionsStatic'][func_name]
                 else:
-                    raise InvalidFunctionException(f'InvalidFunctionException: {fnp[0]} is neither a variable nor a class')
-                for i in range(1, len(fnp)-1): # index 0 has already been done (see above)
-                    current, current_type = function_location[i]
-                    if current_type == 'class':
-                        if i < len(fnp)-1:
-                            if fnp[i] in current['variablesStatic']:
-                                function_location.append((current['variablesStatic'][fnp[i]], 'variable'))
-                            else:
-                                raise InvalidFunctionException(f'InvalidFunctionException: {fnp[i]} is not a variable of {function_location}')
-                        else:
-                            if fnp[i] in current['functionsStatic']:
-                                function_data_upper = current['functionsStatic'][fnp[i]]
-                                break
-                            else:
-                                raise InvalidFunctionException(f'InvalidFunctionException: {fnp[i]} is not a function of {function_location}')
-                    else:
-                        raise Exception('This feature is not yet implemented')
+                    debug('var_of: ', var_of)
+                    var_class = var_of['class']
+                    function_data_upper = self.classes[var_class]['functions'][func_name]
+                    pass_var_of = True
+                if not function_data_upper:
+                    raise InvalidFunctionException(f'InvalidFunctionException: The function {s} does not exist')
             
             # Get function_data_lower
             varclasses = []
@@ -710,6 +717,8 @@ class InterpretationInstance():
             # Prepare an InterpretionInstance
             interpreter = InterpretationInstance(self.providedInformation, self.filePerms)
             interpreter.variables = self.variables
+            if pass_var_of == True:
+                interpreter.variables['self'] = var_of
             interpreter.classes = self.classes
             interpreter.functions = self.functions
             
@@ -863,8 +872,43 @@ class InterpretationInstance():
             }
         elif line.strip() == 'return':
             return { "return": True }
-        if line in self.variables:
-            return self.variables[line]
+        
+        f = REGEX_VAR.match(line)
+        if f:
+            currently_at = {'isClass': False, 'private': False, 'variables': self.variables}
+            vns: list = f.group(1).split('.') # vns: var name split
+            classname = ''
+            if '' in vns:
+                raise Exception('Attempts to get value of variable should not end in ., nor should there be multiple consecutive dots')
+            if vns[0] in self.classes:
+                currently_at['variables'] = self.classes[vns[0]]['variablesStatic']
+                currently_at['isClass'] = True
+                classname = vns.pop(0)
+            lastVarPart = ''
+            if len(vns) > 0:
+                for varpart in vns:
+                    if currently_at == None:
+                        raise Exception(f'Cannot get {varpart} of {lastVarPart}')
+                    if line in currently_at['variables']:
+                        currently_at = currently_at['variables'][line]
+                        if (type(currently_at) != dict) and (currently_at != None):
+                            raise Exception('Cannot get .value of list, str, number, bool, nor none')
+                        if ('private' in currently_at) and (currently_at['private'] == True):
+                            raise Exception('This variable cannot be accessed from outside of the class')
+                        lastVarPart = varpart
+                    else:
+                        raise Exception(f'Variable {varpart} does not exist in context of {vns}')
+                if lastVarPart == '':
+                    raise Exception('You managed to trigger the variable getting regex without calling a variable...')
+            elif currently_at['isClass'] == True:
+                return {
+                    'class': 'class',
+                    'variables': {
+                        'value': classname
+                    }
+                }
+            return currently_at
+        
         f = REGEX_LITERAL_LIST.match(line)
         if f:
             listContents: str = f.group(1)

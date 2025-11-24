@@ -116,6 +116,10 @@ Returns a hash in hexadecimal form of val
 Returns: A string with all instances of search in original replaced with replacement (str)\
 Returns a string that is the original, but with all instances of the original string replaced with replacement.
 
+## getItemAtIndex(ltgif: list, index: number)
+Returns: The item at specified index of ltgif (any)\
+Returns the item at specified index of ltgif (list to get item from). Raises an exception for out-of-index values.
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
@@ -207,3 +211,15 @@ These literal expressions are declared by simply using valid numbers, with or wi
 
 ## None
 The literal `none` returns none.
+
+# Non-static methods of builtin classes
+Note that for now, you need to put functions into variables before being able to use the methods of the things they return. For example, instead of doing `declare a = y().z();`, you (at least for now) need to do something like this:
+```
+declare a = y();
+declare a = a.z();
+```
+
+## Strings
+### toNumber()
+Returns: The string in the form of a number (number)\
+Equivalent to `strToNum(string);`
