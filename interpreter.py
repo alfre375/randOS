@@ -408,10 +408,18 @@ class InterpretationInstance():
             elif s == 'getSplitCommand':
                 if len(vsplitcompiled) == 0:
                     #print('No inputs, sending entire list')
+                    listToReturn = []
+                    for item in self.providedInformation['cmds']:
+                        listToReturn.append({
+                            'class': 'str',
+                            'variables': {
+                                'value': item
+                            }
+                        })
                     return {
                         "class": "list",
                         "variables": {
-                            "value": self.providedInformation['cmds']
+                            "value": listToReturn
                         }
                     }
                 if (vsplitcompiled[0]['class'] != 'number') or (vsplitcompiled[0]['variables']['value'] < 0) or (vsplitcompiled[0]['variables']['value'] != float(maths.floor(vsplitcompiled[0]['variables']['value']))):
@@ -501,8 +509,13 @@ class InterpretationInstance():
                     raise Exception(f'Function can only take one value, {len(vsplitcompiled)} values given')
                 if vsplitcompiled[0]['class'] != 'list':
                     raise TypeError('TypeError: getAudioSegmentFromArray only takes a list value')
+                listToCheck = []
+                for item in vsplitcompiled[0]['variables']['value']:
+                    if item['class'] != 'number':
+                        raise TypeError('TypeError: the array passed to getAudioSegmentFromArray can only contain numbers')
+                    listToCheck.append(item['variables']['value'])
                 audioSegment = AudioSegment(
-                    data=b''.join(struct.pack('<h', sample) for sample in vsplitcompiled[0]['variables']['value']),
+                    data=b''.join(struct.pack('<h', sample) for sample in listToCheck),
                     frame_rate=44100,
                     sample_width=2,
                     channels=1
@@ -658,7 +671,7 @@ class InterpretationInstance():
                 }
             elif s == 'getItemAtIndex':
                 if len(vsplitcompiled) != 2:
-                    raise Exception(f'Function can only take exactly three values, {len(vsplitcompiled)} values given')
+                    raise Exception(f'Function can only take exactly two values, {len(vsplitcompiled)} values given')
                 if vsplitcompiled[0]['class'] == 'list':
                     if not (vsplitcompiled[1]['class'] == 'number'):
                         raise TypeError('TypeError: index must be a number')
@@ -671,6 +684,18 @@ class InterpretationInstance():
                     raise Exception('ROSC does not support dictionaries at this time')
                 else:
                     raise TypeError('TypeError: getItemAtIndex only takes a list for the item to get index of')
+            elif s == 'getListWithItemAppended':
+                if len(vsplitcompiled) != 2:
+                    raise Exception(f'Function can only take exactly two values, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'list'):
+                    raise TypeError('TypeError: initial list must be a list')
+                original_list: list = vsplitcompiled[0]['variables']['value']
+                return {
+                    'class': 'list',
+                    'variables': {
+                        'value': original_list.append(vsplitcompiled[1])
+                    }
+                }
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
@@ -915,6 +940,9 @@ class InterpretationInstance():
         if f:
             listContents: str = f.group(1)
             listValue: list = self.lex(listContents, ',')
+            listValueCompiled: list = []
+            for item in listValue:
+                listValueCompiled.append(self.run(item))
             return {
                 "class": "list",
                 "variables": {

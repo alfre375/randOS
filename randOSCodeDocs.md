@@ -120,6 +120,10 @@ Returns a string that is the original, but with all instances of the original st
 Returns: The item at specified index of ltgif (any)\
 Returns the item at specified index of ltgif (list to get item from). Raises an exception for out-of-index values.
 
+## getListWithItemAppended(initial: list, itemToAdd: any)
+Returns: A copy of the initial list with itemToAdd at the end (list)\
+Makes a new list that is like initial but with itemToAdd after all values of initial
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
