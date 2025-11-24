@@ -696,6 +696,20 @@ class InterpretationInstance():
                         'value': original_list.append(vsplitcompiled[1])
                     }
                 }
+            elif s == 'splitStringIntoCharacters':
+                if len(vsplitcompiled) != 1:
+                    raise Exception(f'Function can only take exactly one value, {len(vsplitcompiled)} values given')
+                if not (vsplitcompiled[0]['class'] == 'str'):
+                    raise TypeError('TypeError: string to split must be a string')
+                listToReturn: list = []
+                for item in list(vsplitcompiled[0]['variables']['value']):
+                    listToReturn.append(item)
+                return {
+                    'class': 'list',
+                    'variables': {
+                        'value': listToReturn
+                    }
+                }
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts

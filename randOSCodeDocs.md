@@ -124,6 +124,10 @@ Returns the item at specified index of ltgif (list to get item from). Raises an 
 Returns: A copy of the initial list with itemToAdd at the end (list)\
 Makes a new list that is like initial but with itemToAdd after all values of initial
 
+## splitStringIntoCharacters(stringToSplit: str)
+Returns: A list of the characters in stringToSplit (list)\
+Returns a list from separating stringToSplit into characters
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
