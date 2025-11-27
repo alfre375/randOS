@@ -1,4 +1,4 @@
-debugMode = False
+debugMode = True
 import re, ast
 import os
 import randosUtils
@@ -925,6 +925,9 @@ class InterpretationInstance():
         elif line.strip() == 'return':
             return { "return": True }
         
+        if line == 'none':
+            return None
+        
         f = REGEX_VAR.match(line)
         if f:
             currently_at = {'isClass': False, 'private': False, 'variables': self.variables}
@@ -997,8 +1000,6 @@ class InterpretationInstance():
             }
         except Exception:
             print('',end='')
-        if line == 'none':
-            return None
         if not line:
             return
         raise Exception(f'Invalid code {line}')

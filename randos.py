@@ -163,6 +163,12 @@ if (len(users) == 0):
                     print('WARN: Validation failed. File may be tampered with. Deleting.')
                     os.remove(f'./files/bin/{prog}')
                     filePerms.remove(f'/bin/{prog}')
+        if not ('/' in filePerms):
+            filePerms['/'] = {
+                'owner': 'root',
+                'permissions': 'rw-r--r--'
+            }
+            updateFilePermsFile()
         print('You\'re all set! Now just log in with your new credentials!')
         break
 
