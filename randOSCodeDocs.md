@@ -132,6 +132,15 @@ Returns a list from separating stringToSplit into characters
 Returns: the length of val (number)\
 Returns the length of the inputted list
 
+## directoryItems(path: str)
+Returns: A list of all items directly in the path (list)\
+Required permissions: readDirectory\
+Returns a list of all items directly in the specified path. A recurssive option is planned for the future, but for now the recurssive option does nothing.
+
+## outnnl(msg: str | number)
+Returns: none\
+Outputs msg without newline
+
 # Important functions (written in ROSC)
 ## divide(val1: number, val2: number)
 Returns: val1 divided by val2 (number)\
@@ -207,6 +216,10 @@ This permission is required for the readFromFile() function and getAudioSegmentF
 ### readCurrentTime
 Restrictions: none\
 This permission is required for the getCurrentTimestamp() function
+
+### readDirectory
+Restrictions: none\
+This permission is required for the directoryItems() function
 
 # Literal Expressions
 ## Lists

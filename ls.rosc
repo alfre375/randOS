@@ -1,0 +1,17 @@
+PERMISSIONS readDirectory
+
+declare path = getSplitCommand(1);
+if (equals(path, none)) {
+    declare path = '.';
+};
+declare dirFiles = directoryItems(path);
+declare i = 0;
+declare dirFileQty = listLen(dirFiles);
+while (isGreater(dirFileQty, i)) {
+    outnnl(getItemAtIndex(dirFiles, i));
+    declare i = add(i, 1);
+    if (isGreater(dirFileQty, i)) {
+        outnnl(' ');
+    };
+};
+out('');

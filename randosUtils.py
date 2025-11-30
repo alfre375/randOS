@@ -109,6 +109,8 @@ def hasPermission(userUUID: str, perm: str, file: str, filePerms: dict):
     if not file in filePerms:
         print('File does not have permissions configured')
         return False
+    if userUUID == 'root':
+        return True
     filePermsSpecific: dict = filePerms[file]
     filePermsList = list(filePermsSpecific['permissions'])
     if not filePermsSpecific:

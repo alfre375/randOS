@@ -21,6 +21,17 @@ REGEX_FUNCTION_DECLARATION = re.compile(r'''^\s*fn\s+([a-zA-Z_]+)\s*\(([\sa-zA-Z
 REGEX_RETURN = re.compile(r'''^\s*return\s+([\s\S]*)$''')
 REGEX_VAR = re.compile(r'''^\s*([A-Za-z_][A-Za-z0-9_.]*)\s*$''')
 
+def updateInputs(first: str, second: str) -> tuple[str,str]:
+    if '{' in first:
+        split: list = first.split('{', 1)
+        first_ret: str = split[0]
+        first_list: list = list(first_ret.strip())
+        first_list.pop()
+        first_ret = ''.join(first_list)
+        second_ret = split[1] + ') {' + second
+        return (first_ret, second_ret)
+    return (first, second)
+
 def exactPath(relativePath: str, osPath: str):
     path: str = str(os.path.abspath(osPath + relativePath))
     if path.startswith(osPath):
@@ -721,6 +732,52 @@ class InterpretationInstance():
                         'value': len(vsplitcompiled[0]['variables']['value'])
                     }
                 }
+            elif s == 'directoryItems':
+                if not ('readDirectory' in self.providedInformation['permissions']):
+                    raise Exception('Permission readDirectory is not in program metadata')
+                recursive: bool = False
+                path: str = '.'
+                activeDir: str = self.providedInformation['activeDirectory']
+                if len(vsplitcompiled) > 2:
+                    raise Exception(f'Function can only take up to two values, {len(vsplitcompiled)} values given')
+                if len(vsplitcompiled) >= 1:
+                    if not (vsplitcompiled[0]['class'] == 'str'):
+                        raise TypeError('TypeError: path must be a str')
+                    path = vsplitcompiled[0]['variables']['value']
+                    debug(f'Entered path: {path}')
+                if len(vsplitcompiled) >= 2:
+                    if not (vsplitcompiled[1]['class'] == 'bool'):
+                        raise TypeError('TypeError: recursive must be a bool')
+                    recursive = vsplitcompiled[1]['variables']['value']
+                path = getSysDirFromRelative(path, activeDir, self.providedInformation['root'])
+                hostPath: str = self.providedInformation['root'] + path
+                debug(f'path: {path}; hostPath: {hostPath}')
+                if not randosUtils.hasPermission(self.providedInformation['userUUID'], 'r', path, self.filePerms):
+                    raise Exception('You do not have permission to access this directory')
+                items: list = []
+                for item in os.listdir(hostPath):
+                    items.append({
+                        'class': 'str',
+                        'variables': {
+                            'value': item
+                        }
+                    })
+                return {
+                    'class': 'list',
+                    'variables': {
+                        'value': items
+                    }
+                }
+            elif s == 'outnnl': # nnl = no newline
+                vcompiled = self.run(v)
+                if vcompiled['class'] != 'str':
+                    if vcompiled['class'] == 'number':
+                        vcompiled = numToStr(vcompiled)
+                    else:
+                        raise TypeError('out function accepts only str and num')
+                print(vcompiled['variables']['value'], end='')
+                return
+                
             
             # Custom functions
             fnp = self.lex(s, '.') # fnp = function name parts
@@ -816,7 +873,9 @@ class InterpretationInstance():
         
         f = REGEX_WHILE.match(line)
         if f:
+            condition_before_run = f.group(1)
             action = f.group(2)
+            condition_before_run, action = updateInputs(condition_before_run, action)
             condition = {
                 "class": "bool",
                 "variables": {
@@ -827,10 +886,9 @@ class InterpretationInstance():
                 debug('CONDITION: ', condition)
                 if not condition['variables']['value']:
                     break
-                condition = f.group(1)
-                if condition == '':
-                    condition = 'true'
-                condition = self.run(condition)
+                if condition_before_run == '':
+                    condition_before_run = 'true'
+                condition = self.run(condition_before_run)
                 debug('CONDITION: ', condition)
                 if not condition['variables']['value']:
                     break
@@ -875,6 +933,7 @@ class InterpretationInstance():
             condition = f.group(1)
             #print('> ', condition)
             ifTrue = f.group(2)
+            condition, ifTrue = updateInputs(condition, ifTrue)
             ifTrueLexed = self.lex(ifTrue)
             #print(ifTrueLexed)
             condition = self.run(condition)
@@ -948,7 +1007,7 @@ class InterpretationInstance():
                         currently_at = currently_at['variables'][line]
                         if (type(currently_at) != dict) and (currently_at != None):
                             raise Exception('Cannot get .value of list, str, number, bool, nor none')
-                        if ('private' in currently_at) and (currently_at['private'] == True):
+                        if (type(currently_at) == dict) and ('private' in currently_at) and (currently_at['private'] == True):
                             raise Exception('This variable cannot be accessed from outside of the class')
                         lastVarPart = varpart
                     else:
